@@ -18,48 +18,46 @@
 
   window.WebSocket = function(url, protocols) {
     if (url?.includes("clouddata.scratch.mit.edu") || url?.includes("cloud.scratch.mit.edu")) {
-      console.log("%c[Custom Cloud] Redirecting cloud → your server", "color:orange;font-weight:bold");
+      console.log("[Custom Cloud] Redirecting cloud → server");
       const match = location.pathname.match(/projects\/(\d+)/);
       const projectId = match ? match[1] : "default";
       const ws = new OriginalWebSocket(serverUrl);
 
       ws.addEventListener("open", () => {
-        console.log("%c[Custom Cloud] Connected! Handshake project " + projectId, "color:cyan");
+        console.log("[Custom Cloud] connected, handshake project", projectId);
         ws.send(JSON.stringify({ method: "handshake", project_id: projectId }));
       });
 
-      ws.addEventListener("message", (event) => {
-        if (typeof event.data !== "string") return;
+      ws.addEventListener("message", (e) => {
         try {
-          const data = JSON.parse(event.data);
-          if (data.method === "set" && vm?.runtime?.ioDevices?.cloud) {
-            vm.runtime.ioDevices.cloud._setCloudVar(data.name, data.value);
-            console.log("[Cloud] set", data.name, "→", data.value);
+          const data = JSON.parse(e.data);
+          if (data.method === "set") {
+            const cloud = vm?.runtime?.ioDevices?.cloud;
+            if (!cloud) return;
+            if (cloud._cloudData[data.name] === undefined) {
+              cloud.createCloudVariable(data.name);
+            }
+            cloud._setCloudVar(data.name, data.value);
+            console.log("[Cloud] set", data.name, data.value);
           }
         } catch {}
       });
+
+      ws.addEventListener("error", e => console.log("[Custom Cloud] ws error", e));
+      ws.addEventListener("close", () => console.log("[Custom Cloud] ws closed"));
 
       return ws;
     }
     return new OriginalWebSocket(url, protocols);
   };
 
-  setTimeout(() => {
-    if (vm?.runtime?.ioDevices?.cloud) {
-      const cloud = vm.runtime.ioDevices.cloud;
-      console.log("%c[Custom Cloud] Restarting cloud connection...", "color:#00ffff");
+  // Перевірка кожні 300ms поки VM не буде готовий
+  let checkVM = setInterval(() => {
+    const cloud = vm?.runtime?.ioDevices?.cloud;
+    if (cloud) {
+      clearInterval(checkVM);
       cloud.disconnect?.();
       setTimeout(() => cloud.connect?.(), 400);
-    } else {
-      console.warn("[Custom Cloud] Could not find Scratch VM cloud device.");
     }
-  }, 1200);
-  let checkVM = setInterval(() => {
-  if (vm?.runtime?.ioDevices?.cloud) {
-    clearInterval(checkVM);
-    const cloud = vm.runtime.ioDevices.cloud;
-    cloud.disconnect?.();
-    setTimeout(() => cloud.connect?.(), 400);
-  }
-}, 300);
+  }, 300);
 })();
