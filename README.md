@@ -4,5 +4,3 @@ Open-source code
 Open console F12 > Console
 #
 Paste the script: ```fetch("https://raw.githubusercontent.com/Minetristeru777/ScratchUnlock/refs/heads/main/Unlock.js").then(r=>r.text()).then(eval);```
-# Fix for Cloud Var
-Paste this script: ```fetch("https://raw.githubusercontent.com/Minetristeru777/ScratchUnlock/refs/heads/main/cloud-var-fix.js").then(r=>r.text()).then(eval);```
