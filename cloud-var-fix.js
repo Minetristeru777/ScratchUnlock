@@ -54,4 +54,12 @@
       console.warn("[Custom Cloud] Could not find Scratch VM cloud device.");
     }
   }, 1200);
+  let checkVM = setInterval(() => {
+  if (vm?.runtime?.ioDevices?.cloud) {
+    clearInterval(checkVM);
+    const cloud = vm.runtime.ioDevices.cloud;
+    cloud.disconnect?.();
+    setTimeout(() => cloud.connect?.(), 400);
+  }
+}, 300);
 })();
